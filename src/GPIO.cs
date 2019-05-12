@@ -344,7 +344,7 @@ namespace RaspberryPi
         /** [CONST]
          * Gibt den Path für die gpios value wieder
          */
-        public const string GPIOPATH_VALUE = GPIOController.GPIOPATH + "{0}/value";
+        public const string GPIOPATH_VALUE = GPIOController.GPIOPATH + "gpio{0}/value";
 
         /** [CONST]
          * Gibt den Path für den Unexport wieder
@@ -859,16 +859,24 @@ namespace RaspberryPi
     {
         gpio0 = 0,
         gpio1 = 1,
+        gpio2 = 2,
+        gpio3 = 3,
         gpio4 = 4,
+        gpio5 = 5,
+        gpio6 = 6,
         gpio7 = 7,
         gpio8 = 8,
         gpio9 = 9,
         gpio10 = 10,
         gpio11 = 11,
+        gpio12 = 12,
+        gpio13 = 13,
         gpio14 = 14,
         gpio15 = 15,
+        gpio16 = 16,
         gpio17 = 17,
         gpio18 = 18,
+        gpio19 = 19,
         gpio20 = 20,
         gpio21 = 21,
         gpio22 = 22,
@@ -876,7 +884,9 @@ namespace RaspberryPi
         gpio24 = 24,
         gpio25 = 25,
         gpio26 = 26,
-        gpio27 = 27
+        gpio27 = 27,
+        gpio28 = 28,
+        gpio29 = 29,
     }
 
     // =================================================================
