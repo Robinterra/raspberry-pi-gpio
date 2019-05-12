@@ -32,7 +32,10 @@ namespace RaspberryPi
         public WriteGPIO ( Pin _pin )
             : base ( _pin, PinSetup.Output )
         {
-
+            #if (LOGLEVEL_DEBUG)
+                string methodeName = string.Format ( "new {0} ( Pin _pin ) - Konstruktor", KLASSE );
+                Logging.Trace ( methodeName );
+            #endif
         }
 
         // -------------------------------------------------------------
@@ -42,6 +45,12 @@ namespace RaspberryPi
          */
         ~WriteGPIO (  )
         {
+            #if (LOGLEVEL_DEBUG)
+                Logging.Trace ( KLASSE + " - Dekonstruktor" );
+            #endif
+
+            // -------------------------------
+
             this.Dispose (  );
         }
 
@@ -62,8 +71,16 @@ namespace RaspberryPi
          *
          * @return (bool) Wenn true zurück gegeben wird gab es keine probleme. Bei false konnte kein wert gesetzt werden
          */
-        public override bool Write ( bool _value )
+        public new bool Write ( bool _value )
         {
+            #if (LOGLEVEL_DEBUG)
+                string methodeName = KLASSE + ".Write ( bool _value )";
+                Logging.Trace ( methodeName );
+                Logging.Debug ( methodeName, "_value", _value );
+            #endif
+
+            // -------------------------------
+
             return base.Write ( _value );
         }
 
@@ -101,7 +118,11 @@ namespace RaspberryPi
         public ReadGPIO ( Pin _pin )
             : base ( _pin, PinSetup.Input )
         {
-
+            #if (LOGLEVEL_DEBUG)
+                sstring methodeName = string.Format ( "new {0} ( Pin _pin ) - Konstruktor", KLASSE );
+                Logging.Trace ( methodeName );
+                Logging.Debug ( methodeName, "_pin", _pin );
+            #endif
         }
 
         // -------------------------------------------------------------
@@ -111,6 +132,12 @@ namespace RaspberryPi
          */
         ~ReadGPIO (  )
         {
+            #if (LOGLEVEL_DEBUG)
+                Logging.Trace ( KLASSE + " - Dekonstruktor" );
+            #endif
+
+            // -------------------------------
+
             this.Dispose (  );
         }
 
@@ -129,8 +156,15 @@ namespace RaspberryPi
          *
          * @return (bool) true = gpio high; false = gpio low oder Wert konnte nicht abgerufen werden
          */
-        public override bool Read (  )
+        public new bool Read (  )
         {
+            #if (LOGLEVEL_DEBUG)
+                sstring methodeName = KLASSE + ".Read (  )";
+                Logging.Trace ( methodeName );
+            #endif
+
+            // -------------------------------
+
             return base.Read (  );
         }
 
@@ -257,7 +291,7 @@ namespace RaspberryPi
          *
          * @return (bool) true = gpio high; false = gpio low oder Wert konnte nicht abgerufen werden
          */
-        protected virtual bool Read (  )
+        protected bool Read (  )
         {
             return this.pin.Read (  );
         }
@@ -271,7 +305,7 @@ namespace RaspberryPi
          *
          * @return (bool) Wenn true zurück gegeben wird gab es keine probleme. Bei false konnte kein wert gesetzt werden
          */
-        protected virtual bool Write ( bool _value )
+        protected bool Write ( bool _value )
         {
             return this.pin.Write ( _value );
         }
@@ -290,7 +324,7 @@ namespace RaspberryPi
      * @author Robin D'Andrea
      * @Date 2019.05.12
      */
-    private class GPIOController : IDisposable
+    class GPIOController : IDisposable
     {
         #if (LOGLEVEL_DEBUG)
             public const string KLASSE = "GPIOController";
@@ -437,8 +471,6 @@ namespace RaspberryPi
                 if ( pin == null ) continue;
 
                 pin.Dispose (  );
-
-                pin = null;
             }
 
             this.GPIOPins.Clear (  );
@@ -509,7 +541,7 @@ namespace RaspberryPi
      * @author Robin D'Andrea
      * @Date 2019.05.12
      */
-    private class GPIOPin : IDisposable
+    class GPIOPin : IDisposable
     {
         #if (LOGLEVEL_DEBUG)
             public const string KLASSE = "GPIOPin";
@@ -591,7 +623,7 @@ namespace RaspberryPi
         {
             get
             {
-                if ( !string.IsNullOrEmpty (  ) ) return this.valuePath;
+                if ( !string.IsNullOrEmpty ( this.valuePath ) ) return this.valuePath;
 
                 this.valuePath = string.Format ( GPIOController.GPIOPATH_VALUE, (int)this.Pin );
 
