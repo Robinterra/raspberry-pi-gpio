@@ -1,6 +1,6 @@
 # C# Raspberry Pi GPIO
 
-This is a small project to use Raspberry Pi Gpio in C# Application
+This is a small project to use Raspberry Pi Gpio in C# Application.
 
 ## Getting Started
 

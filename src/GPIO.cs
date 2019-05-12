@@ -8,6 +8,142 @@ namespace RaspberryPi
     // =================================================================
 
     /**
+     * Um die GPIO eines Raspberry Pi anzusteuern (Write)
+     * @author Robin D'Andrea
+     * @Date 2019.05.12
+     */
+    public class WriteGPIO : GPIO
+    {
+        #if (LOGLEVEL_DEBUG)
+            public const string KLASSE = "WriteGPIO";
+        #endif
+
+        // -------------------------------------------------------------
+
+        #region ctor
+
+        // -------------------------------------------------------------
+
+        /**
+         * Konstuktor dieser Klasse
+         *
+         * @param[in] _pin (Pin) Der Pin der diese Instance zugewiesen wird
+         */
+        public WriteGPIO ( Pin _pin )
+            : base ( _pin, PinSetup.Output )
+        {
+
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Der Dekonstruktor zu dieser Klasse
+         */
+        ~WriteGPIO (  )
+        {
+            this.Dispose (  );
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion ctor
+
+        // -------------------------------------------------------------
+
+        #region methods
+
+        // -------------------------------------------------------------
+
+        /**
+         * Um einen Wert für den GPIO zu setzen
+         *
+         * @param[in] _value (bool) true = gpio high; false = gpio low
+         *
+         * @return (bool) Wenn true zurück gegeben wird gab es keine probleme. Bei false konnte kein wert gesetzt werden
+         */
+        public override bool Write ( bool _value )
+        {
+            return base.Write ( _value );
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion methods
+
+        // -------------------------------------------------------------
+    }
+
+    // =================================================================
+
+    /**
+     * Um die GPIO eines Raspberry Pi anzusteuern (Read)
+     * @author Robin D'Andrea
+     * @Date 2019.05.12
+     */
+    public class ReadGPIO : GPIO
+    {
+        #if (LOGLEVEL_DEBUG)
+            public const string KLASSE = "ReadGPIO";
+        #endif
+
+        // -------------------------------------------------------------
+
+        #region ctor
+
+        // -------------------------------------------------------------
+
+        /**
+         * Konstuktor dieser Klasse
+         *
+         * @param[in] _pin (Pin) Der Pin der diese Instance zugewiesen wird
+         */
+        public ReadGPIO ( Pin _pin )
+            : base ( _pin, PinSetup.Input )
+        {
+
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Der Dekonstruktor zu dieser Klasse
+         */
+        ~ReadGPIO (  )
+        {
+            this.Dispose (  );
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion ctor
+
+        // -------------------------------------------------------------
+
+        #region methods
+
+        // -------------------------------------------------------------
+
+        /**
+         * Gibt den Wert des GPIO wieder
+         *
+         * @return (bool) true = gpio high; false = gpio low oder Wert konnte nicht abgerufen werden
+         */
+        public override bool Read (  )
+        {
+            return base.Read (  );
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion methods
+
+        // -------------------------------------------------------------
+    }
+
+    // =================================================================
+
+    /** [FACADE]
      * Um die GPIO eines Raspberry Pi anzusteuern
      * @author Robin D'Andrea
      * @Date 2019.05.12
@@ -20,6 +156,130 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        #region vars
+
+        // -------------------------------------------------------------
+
+        /**
+         * Der Pin dieser instance
+         */
+        private GPIOPin pin;
+
+        // -------------------------------------------------------------
+
+        #endregion vars
+
+        // -------------------------------------------------------------
+
+        #region get/set
+
+        // -------------------------------------------------------------
+
+        /**
+         * Gibt den ausgewählten Pin wieder
+         */
+        public Pin Pin
+        {
+            get
+            {
+                return this.pin.Pin;
+            }
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Gibt den Setup des Pins wieder
+         */
+        public PinSetup Setup
+        {
+            get
+            {
+                return this.pin.Setup;
+            }
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion get/set
+
+        // -------------------------------------------------------------
+
+        #region ctor
+
+        // -------------------------------------------------------------
+
+        /**
+         * Konstuktor dieser Klasse
+         *
+         * @param[in] _pin (Pin) Der Pin der diese Instance zugewiesen wird
+         * @param[in] _setup (PinSetup) Der Setup mit dem dieser Pin Initialisiert wurde
+         */
+        protected GPIO ( Pin _pin, PinSetup _setup )
+        {
+            this.pin = GPIOController.Instance.SetupOrChangeGPIOPin ( _pin, _setup );
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Der Dekonstruktor zu dieser Klasse
+         */
+        ~GPIO (  )
+        {
+            this.Dispose (  );
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion ctor
+
+        // -------------------------------------------------------------
+
+        #region methods
+
+        // -------------------------------------------------------------
+
+        /**
+         * Gibt den Pin wieder frei
+         */
+        public void Dispose (  )
+        {
+            this.pin.Dispose (  );
+
+            this.pin = null;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Gibt den Wert des GPIO wieder
+         *
+         * @return (bool) true = gpio high; false = gpio low oder Wert konnte nicht abgerufen werden
+         */
+        protected virtual bool Read (  )
+        {
+            return this.pin.Read (  );
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Um einen Wert für den GPIO zu setzen
+         *
+         * @param[in] _value (bool) true = gpio high; false = gpio low
+         *
+         * @return (bool) Wenn true zurück gegeben wird gab es keine probleme. Bei false konnte kein wert gesetzt werden
+         */
+        protected virtual bool Write ( bool _value )
+        {
+            return this.pin.Write ( _value );
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion methods
+
         // -------------------------------------------------------------
 
     }
@@ -27,7 +287,8 @@ namespace RaspberryPi
     // =================================================================
 
     /** [SINGLETON]
-     * 
+     * @author Robin D'Andrea
+     * @Date 2019.05.12
      */
     private class GPIOController : IDisposable
     {
@@ -81,6 +342,11 @@ namespace RaspberryPi
          */
         private static GPIOController instance;
 
+        /**
+         * Liste mit allen aktiven Pins
+         */
+        private List<GPIOPin> gpioPins;
+
         // -------------------------------------------------------------
 
         #endregion vars
@@ -88,6 +354,23 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         #region get/set
+
+        // -------------------------------------------------------------
+
+        /**
+         * Liste mit allen aktiven Pins
+         */
+        private List<GPIOPin> GPIOPins
+        {
+            get
+            {
+                if ( this.gpioPins != null ) return this.gpioPins;
+
+                this.gpioPins = new List<RaspberryPi.GPIOPin> (  );
+
+                return this.gpioPins;
+            }
+        }
 
         // -------------------------------------------------------------
 
@@ -116,6 +399,9 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * Konstuktor dieser Klasse
+         */
         private GPIOController (  )
         {
 
@@ -123,9 +409,12 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * Der Dekonstruktor zu dieser Klasse
+         */
         ~GPIOController (  )
         {
-
+            this.Dispose (  );
         }
 
         // -------------------------------------------------------------
@@ -134,10 +423,92 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        #region methods
+
+        // -------------------------------------------------------------
+
+        /**
+         * * Gibt alle Pins wieder frei
+         */
+        public void Dispose (  )
+        {
+            foreach ( GPIOPin pin in this.GPIOPins )
+            {
+                if ( pin == null ) continue;
+
+                pin.Dispose (  );
+
+                pin = null;
+            }
+
+            this.GPIOPins.Clear (  );
+
+            this.gpioPins = null;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Gibt die Instance für einen Pin wieder
+         *
+         * @param[in] _pin (Pin) Den Pin für den die Instance abgerufen wird
+         *
+         * @return (GPIOPin) Die Instance für den abgerufen Pin. Konnte kein Pin abgerufen werden wird null wieder gegeben
+         */
+        public GPIOPin GetGPIOPin ( Pin _pin )
+        {
+            foreach ( GPIOPin pin in this.GPIOPins )
+            {
+                if ( pin == null ) continue;
+
+                if ( pin.Pin == _pin ) return pin;
+            }
+
+            return null;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Gibt die Instance für einen Pin wieder
+         *
+         * @param[in] _pin (Pin) Den Pin für den die Instance abgerufen wird
+         * @param[in] _setup (PinSetup) Der Setup für diesen Pin
+         *
+         * @return (GPIOPin) Die Instance für den abgerufen Pin.
+         */
+        public GPIOPin SetupOrChangeGPIOPin ( Pin _pin, PinSetup _setup )
+        {
+            GPIOPin result = this.GetGPIOPin ( _pin );
+
+            if ( result == null )
+            {
+                result = new GPIOPin ( _pin, _setup );
+
+                this.GPIOPins.Add ( result );
+            }
+            else
+            {
+                result.ChangeSetup ( _setup );
+            }
+
+            return result;
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion methods
+
+        // -------------------------------------------------------------
+
     }
 
     // =================================================================
 
+    /**
+     * @author Robin D'Andrea
+     * @Date 2019.05.12
+     */
     private class GPIOPin : IDisposable
     {
         #if (LOGLEVEL_DEBUG)
@@ -161,7 +532,7 @@ namespace RaspberryPi
         private Pin pin;
 
         /**
-         * 
+         * Der Pfad für diesen Pin um die Value zu setzen oder abzurufen
          */
         private string valuePath;
 
@@ -213,6 +584,9 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * Der Pfad für diesen Pin um die Value zu setzen oder abzurufen
+         */
         private string ValuePath
         {
             get
@@ -235,16 +609,25 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
-        public GPIOPin ( Pin pin, PinSetup setup )
+        /**
+         * Konstuktor dieser Klasse
+         *
+         * @param[in] _pin (Pin) Der Pin der diese Instance zugewiesen wird
+         * @param[in] _setup (PinSetup) Das Setup mit dem dieser Pin Initialisiert wurde
+         */
+        public GPIOPin ( Pin _pin, PinSetup _setup )
         {
-            this.pin = pin;
-            this.setup = setup;
+            this.pin = _pin;
+            this.setup = _setup;
 
             this.Export (  );
         }
 
         // -------------------------------------------------------------
 
+        /**
+         * Der Dekonstruktor zu dieser Klasse
+         */
         ~GPIOPin (  )
         {
             this.Dispose (  );
@@ -260,6 +643,13 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * Um einen Wert für den GPIO zu setzen
+         *
+         * @param[in] _value (bool) true = gpio high; false = gpio low
+         *
+         * @return (bool) Wenn true zurück gegeben wird gab es keine probleme. Bei false konnte kein wert gesetzt werden
+         */
         public bool Write ( bool _out )
         {
             if ( this.setup != PinSetup.Output ) return false;
@@ -273,6 +663,7 @@ namespace RaspberryPi
             catch
             {
                 this.setup = PinSetup.None;
+
                 return false;
             }
 
@@ -281,6 +672,11 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * Gibt den Wert des GPIO wieder
+         *
+         * @return (bool) true = gpio high; false = gpio low oder Wert konnte nicht abgerufen werden
+         */
         public bool Read (  )
         {
             if ( this.setup == PinSetup.None ) return false;
@@ -299,6 +695,9 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * Gibt den Pin wieder frei
+         */
         public void Dispose (  )
         {
             this.Unexport (  );
@@ -306,21 +705,33 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
-        public bool ChangeSetup ( PinSetup setup )
+        /**
+         * Ändert das Setup für diesen Pin
+         *
+         * @param[in] _setup (PinSetup) Das neue Setup für diesen Pin
+         *
+         * @return (bool) true = setup wurde geändert; false = setup konnte nicht geändert werden
+         */
+        public bool ChangeSetup ( PinSetup _setup )
         {
-            if ( setup == this.setup ) return true;
+            if ( _setup == this.setup ) return true;
 
             bool isok = this.Unexport (  );
 
             if ( !isok ) return false;
 
-            this.setup = setup;
+            this.setup = _setup;
 
             return this.Export (  );
         }
 
         // -------------------------------------------------------------
 
+        /**
+         * Exportiert einen Pin um ihn zu verwenden
+         *
+         * @return (bool) true = export erfolgreich; false = fehlgeschlagen
+         */
         private bool Export (  )
         {
             if ( this.setup != PinSetup.None ) return false;
@@ -340,6 +751,11 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * Setzt die Direction für einen Pin
+         *
+         * @return (bool) true = direction konnte gesetzt werden; false = direction konnte nicht gesetzt werden
+         */
         private bool SetDirection (  )
         {
             if ( this.setup == PinSetup.None ) return false;
@@ -359,6 +775,11 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * Unexportiert einen Pin um ihn wieder frei zugeben
+         *
+         * @return (bool) true = unexport efolgreich; false = unexport fehlgeschlagen
+         */
         private bool Unexport (  )
         {
             if ( this.setup == PinSetup.None ) return true;
@@ -384,6 +805,10 @@ namespace RaspberryPi
 
     // =================================================================
 
+    /**
+     * @author Robin D'Andrea
+     * @Date 2019.05.12
+     */
     public enum PinSetup
     {
         None = 0,
@@ -394,7 +819,9 @@ namespace RaspberryPi
     // =================================================================
 
     /**
-     * PIN des Raspberry Pi
+     * Pin des Raspberry Pi
+     * @author Robin D'Andrea
+     * @Date 2019.05.12
      */
     public enum Pin
     {
