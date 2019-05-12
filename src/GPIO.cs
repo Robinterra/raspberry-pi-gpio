@@ -359,7 +359,7 @@ namespace RaspberryPi
         /** [CONST]
          * Gibt den Path für die gpio direktion wieder
          */
-        public const string GPIOPATH_DIRECTION = GPIOController.GPIOPATH + "{0}/direction";
+        public const string GPIOPATH_DIRECTION = GPIOController.GPIOPATH + "gpio{0}/direction";
 
         // -------------------------------------------------------------
 
