@@ -23,6 +23,29 @@ Tests only run in Raspbian
 * C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 * mono
 
+## Example
+
+### Output
+```
+WriteGPIO gpio = new WriteGPIO ( Pin.gpio17 );
+gpio.Write ( true );
+Thread.Sleep ( 1000 );
+gpio.Write ( false );
+```
+
+### Input
+```
+ReadGPIO gpio = new ReadGPIO ( Pin.gpio18 );
+if ( gpio.Read (  ) )
+{
+    Console.WriteLine ( "An" );
+}
+else
+{
+    Console.WriteLine ( "Aus" );
+}
+```
+
 ## Authors
 
 * **Robin D'Andrea** - *Robinterra* - [Robinterra](https://github.com/Robinterra)
