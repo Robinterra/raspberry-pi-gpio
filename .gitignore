@@ -1,0 +1,7 @@
+bin/
+log/
+*.tmp
+~$*.docx
+*~
+RESOURCES.resources
+RESOURCES.txt
