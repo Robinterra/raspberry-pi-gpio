@@ -595,9 +595,29 @@ namespace RaspberryPi
          */
         private string valuePath;
 
+        /**
+         *
+         */
+        private ValueChangeFunktion valueChange;
+
         // -------------------------------------------------------------
 
         #endregion vars
+
+        // -------------------------------------------------------------
+
+        #region delegate
+
+        // -------------------------------------------------------------
+
+        /**
+         *
+         */
+        public delegate bool ValueChangeFunktion(GPIO _currentGpio, ValueState _oldValue, ValueState _newValue);
+
+        // -------------------------------------------------------------
+
+        #endregion delegate
 
         // -------------------------------------------------------------
 
