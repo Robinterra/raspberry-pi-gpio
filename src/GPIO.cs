@@ -841,6 +841,8 @@ namespace RaspberryPi
 
             this.setup = PinSetup.None;
 
+            if ( !File.Exists ( this.ValuePath ) ) return true;
+
             try
             {
                 File.WriteAllText ( GPIOController.GPIOPATH_UNEXPORT, ((int)this.Pin).ToString (  ) );
