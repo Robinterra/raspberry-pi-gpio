@@ -748,7 +748,7 @@ namespace RaspberryPi
             {
                 value = File.ReadAllText ( this.ValuePath );
             }
-            catch { return ValueState.UNKNOWN }
+            catch { return ValueState.UNKNOWN; }
 
             return value == "0" ? ValueState.LOW : ValueState.HIGH;
         }
