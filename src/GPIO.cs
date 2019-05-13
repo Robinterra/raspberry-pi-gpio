@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using System.Collections.Generic;
 
 namespace RaspberryPi
@@ -725,6 +726,44 @@ namespace RaspberryPi
                 this.setup = PinSetup.None;
 
                 return false;
+            }
+
+            return true;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public bool AnalogWrite ( byte _strength, int _duration )
+        {
+            if ( this.setup != PinSetup.Output ) return false;
+            if ( !File.Exists ( this.ValuePath ) ) return false;
+            if ( _strength == 0 )
+            {
+                this.Write ( ValueState.LOW );
+                Thread.Sleep ( _duration );
+                return true;
+            }
+
+            int signalDuration = (_strength * 1000) / 255;
+            int currentDuration = 0;
+            ValueState highOrLow = ValueState.HIGH;
+
+            while ( currentDuration < _duration )
+            {
+                highOrLow = ( currentDuration / signalDuration ) % 2 == 0 ? ValueState.HIGH : ValueState.LOW;
+
+                this.Write ( highOrLow );
+
+                Thread.Sleep ( signalDuration );
+
+                if ( _duration != -1 ) continue;
+
+                if ( highOrLow == ValueState.HIGH ) continue;
+
+                currentDuration = 0;
             }
 
             return true;
