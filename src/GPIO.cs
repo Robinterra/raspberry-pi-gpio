@@ -293,8 +293,6 @@ namespace RaspberryPi
          */
         public void Dispose (  )
         {
-            this.pin.Dispose (  );
-
             this.pin = null;
         }
 
