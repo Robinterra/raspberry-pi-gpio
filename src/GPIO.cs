@@ -71,7 +71,7 @@ namespace RaspberryPi
          *
          * @return (bool) Wenn true zurück gegeben wird gab es keine probleme. Bei false konnte kein wert gesetzt werden
          */
-        public new bool Write ( bool _value )
+        public new bool Write ( ValueState _value )
         {
             #if (LOGLEVEL_DEBUG)
                 string methodeName = KLASSE + ".Write ( bool _value )";
@@ -156,7 +156,7 @@ namespace RaspberryPi
          *
          * @return (bool) true = gpio high; false = gpio low oder Wert konnte nicht abgerufen werden
          */
-        public new bool Read (  )
+        public new ValueState Read (  )
         {
             #if (LOGLEVEL_DEBUG)
                 sstring methodeName = KLASSE + ".Read (  )";
@@ -239,11 +239,11 @@ namespace RaspberryPi
         {
             get
             {
-                return this.Read (  );
+                return this.Read (  ) == ValueState.HIGH;
             }
             set
             {
-                this.Write ( value );
+                this.Write ( value ? ValueState.HIGH : ValueState.LOW );
             }
         }
 
@@ -303,8 +303,10 @@ namespace RaspberryPi
          *
          * @return (bool) true = gpio high; false = gpio low oder Wert konnte nicht abgerufen werden
          */
-        protected bool Read (  )
+        protected ValueState Read (  )
         {
+            if ( this.pin == null ) return ValueState.UNKNOWN;
+
             return this.pin.Read (  );
         }
 
@@ -317,8 +319,10 @@ namespace RaspberryPi
          *
          * @return (bool) Wenn true zurück gegeben wird gab es keine probleme. Bei false konnte kein wert gesetzt werden
          */
-        protected bool Write ( bool _value )
+        protected bool Write ( ValueState _value )
         {
+            if ( this.pin == null ) return false;
+
             return this.pin.Write ( _value );
         }
 
@@ -704,11 +708,13 @@ namespace RaspberryPi
          *
          * @return (bool) Wenn true zurück gegeben wird gab es keine probleme. Bei false konnte kein wert gesetzt werden
          */
-        public bool Write ( bool _out )
+        public bool Write ( ValueState _out )
         {
             if ( this.setup != PinSetup.Output ) return false;
+            if ( !File.Exists ( this.ValuePath ) ) return false;
+            if ( _out == ValueState.UNKNOWN ) return false;
 
-            string value = _out ? "0" : "1";
+            string value = _out == ValueState.LOW ? "0" : "1";
 
             try
             {
@@ -729,12 +735,12 @@ namespace RaspberryPi
         /**
          * Gibt den Wert des GPIO wieder
          *
-         * @return (bool) true = gpio high; false = gpio low oder Wert konnte nicht abgerufen werden
+         * @return (ValueState) Gibt die Value des Pins wieder
          */
-        public bool Read (  )
+        public ValueState Read (  )
         {
-            if ( this.setup == PinSetup.None ) return false;
-            if ( !File.Exists ( this.ValuePath ) ) return false;
+            if ( this.setup == PinSetup.None ) return ValueState.UNKNOWN;
+            if ( !File.Exists ( this.ValuePath ) ) return ValueState.UNKNOWN;
 
             string value;
 
@@ -742,9 +748,9 @@ namespace RaspberryPi
             {
                 value = File.ReadAllText ( this.ValuePath );
             }
-            catch { return false; }
+            catch { return ValueState.UNKNOWN }
 
-            return value == "1";
+            return value == "0" ? ValueState.LOW : ValueState.HIGH;
         }
 
         // -------------------------------------------------------------
@@ -869,6 +875,15 @@ namespace RaspberryPi
         None = 0,
         Input = 1,
         Output = 2
+    }
+
+    // =================================================================
+
+    public enum ValueState
+    {
+        UNKNOWN = -1,
+        LOW = 0,
+        HIGH = 1
     }
 
     // =================================================================
