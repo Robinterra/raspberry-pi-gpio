@@ -27,16 +27,16 @@ Tests only run in Raspbian
 
 ### Output
 ```
-WriteGPIO gpio = new WriteGPIO ( Pin.gpio17 );
-gpio.Write ( true );
+GPIO gpio = new WriteGPIO ( Pin.gpio17 );
+gpio.Value = true;
 Thread.Sleep ( 1000 );
-gpio.Write ( false );
+gpio.Value = false;
 ```
 
 ### Input
 ```
-ReadGPIO gpio = new ReadGPIO ( Pin.gpio18 );
-if ( gpio.Read (  ) )
+GPIO gpio = new ReadGPIO ( Pin.gpio18 );
+if ( gpio.Value )
 {
     Console.WriteLine ( "An" );
 }

@@ -235,6 +235,20 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        public bool Value
+        {
+            get
+            {
+                return this.Read (  );
+            }
+            set
+            {
+                this.Write ( value );
+            }
+        }
+
+        // -------------------------------------------------------------
+
         #endregion get/set
 
         // -------------------------------------------------------------
@@ -425,6 +439,16 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        public GPIOPin this[Pin _pin]
+        {
+            get
+            {
+                return this.GetGPIOPin ( _pin );
+            }
+        }
+
+        // -------------------------------------------------------------
+
         #endregion get/set
 
         // -------------------------------------------------------------
@@ -511,7 +535,7 @@ namespace RaspberryPi
          */
         public GPIOPin SetupOrChangeGPIOPin ( Pin _pin, PinSetup _setup )
         {
-            GPIOPin result = this.GetGPIOPin ( _pin );
+            GPIOPin result = this[_pin];
 
             if ( result == null )
             {
@@ -748,13 +772,9 @@ namespace RaspberryPi
         {
             if ( _setup == this.setup ) return true;
 
-            bool isok = this.Unexport (  );
-
-            if ( !isok ) return false;
-
             this.setup = _setup;
 
-            return this.Export (  );
+            return this.SetDirection (  );
         }
 
         // -------------------------------------------------------------
@@ -768,11 +788,14 @@ namespace RaspberryPi
         {
             if ( this.setup != PinSetup.None ) return false;
 
-            try
+            if ( !File.Exists ( this.ValuePath ) )
             {
-                File.WriteAllText ( GPIOController.GPIOPATH_EXPORT, ((int)this.Pin).ToString (  ) );
+                try
+                {
+                    File.WriteAllText ( GPIOController.GPIOPATH_EXPORT, ((int)this.Pin).ToString (  ) );
+                }
+                catch { return false; }
             }
-            catch { return false; }
 
             bool isok = this.SetDirection (  );
 
