@@ -952,8 +952,6 @@ namespace RaspberryPi
      */
     public enum Pin
     {
-        gpio0 = 0,
-        gpio1 = 1,
         gpio2 = 2,
         gpio3 = 3,
         gpio4 = 4,
@@ -980,8 +978,6 @@ namespace RaspberryPi
         gpio25 = 25,
         gpio26 = 26,
         gpio27 = 27,
-        gpio28 = 28,
-        gpio29 = 29,
     }
 
     // =================================================================
