@@ -849,8 +849,6 @@ namespace RaspberryPi
          */
         private bool Export (  )
         {
-            if ( this.setup != PinSetup.None ) return false;
-
             if ( !File.Exists ( this.ValuePath ) )
             {
                 try
