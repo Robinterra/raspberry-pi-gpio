@@ -1,5 +1,6 @@
 bin/
 log/
+.vscode/
 *.tmp
 ~$*.docx
 *~

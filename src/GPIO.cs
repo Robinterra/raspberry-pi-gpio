@@ -200,13 +200,50 @@ namespace RaspberryPi
          */
         private GPIOPin pin;
 
+        /**
+         * 
+         */
+        private ListenOnGpio listenGpio;
+
         // -------------------------------------------------------------
 
         #endregion vars
 
         // -------------------------------------------------------------
 
+        #region delegate
+
+        // -------------------------------------------------------------
+
+        /**
+         *
+         */
+        public delegate bool ValueChangeFunktion(GPIO _currentGpio, ValueState _oldValue, ValueState _newValue);
+
+        // -------------------------------------------------------------
+
+        #endregion delegate
+
+        // -------------------------------------------------------------
+
         #region get/set
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        private ListenOnGpio ListenGpio
+        {
+            get
+            {
+                if ( this.listenGpio != null ) return this.listenGpio;
+
+                this.listenGpio = new ListenOnGpio ( this );
+
+                return this.listenGpio;
+            }
+        }
 
         // -------------------------------------------------------------
 
@@ -218,6 +255,23 @@ namespace RaspberryPi
             get
             {
                 return this.pin.Pin;
+            }
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public event ValueChangeFunktion ValueChanged
+        {
+            add
+            {
+                this.listenGpio.ValueChanged += value;
+            }
+            remove
+            {
+                this.listenGpio.ValueChanged -= value;
             }
         }
 
@@ -236,6 +290,9 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        /**
+         * 
+         */
         public bool Value
         {
             get
@@ -294,7 +351,11 @@ namespace RaspberryPi
          */
         public void Dispose (  )
         {
+            this.ListenGpio.Dispose (  );
+
+            this.listenGpio = null;
             this.pin = null;
+
         }
 
         // -------------------------------------------------------------
@@ -308,7 +369,11 @@ namespace RaspberryPi
         {
             if ( this.pin == null ) return ValueState.UNKNOWN;
 
-            return this.pin.Read (  );
+            ValueState valueState = this.pin.Read (  );
+
+            if ( !this.ListenGpio.OnListen ) this.ListenGpio.CurrentValue = valueState;
+
+            return valueState;
         }
 
         // -------------------------------------------------------------
@@ -324,7 +389,31 @@ namespace RaspberryPi
         {
             if ( this.pin == null ) return false;
 
+            if ( !this.ListenGpio.OnListen ) this.ListenGpio.CurrentValue = _value;
+
             return this.pin.Write ( _value );
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public bool StartListen (  )
+        {
+            if ( this.ListenGpio.OnListen ) return true;
+
+            return this.ListenGpio.Start (  );
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public bool StopListen (  )
+        {
+            return this.ListenGpio.Stop (  );
         }
 
         // -------------------------------------------------------------
@@ -595,29 +684,9 @@ namespace RaspberryPi
          */
         private string valuePath;
 
-        /**
-         *
-         */
-        private ValueChangeFunktion valueChange;
-
         // -------------------------------------------------------------
 
         #endregion vars
-
-        // -------------------------------------------------------------
-
-        #region delegate
-
-        // -------------------------------------------------------------
-
-        /**
-         *
-         */
-        public delegate bool ValueChangeFunktion(GPIO _currentGpio, ValueState _oldValue, ValueState _newValue);
-
-        // -------------------------------------------------------------
-
-        #endregion delegate
 
         // -------------------------------------------------------------
 
@@ -911,6 +980,213 @@ namespace RaspberryPi
             catch { return false; }
 
             return true;
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion methods
+
+        // -------------------------------------------------------------
+
+    }
+
+    // =================================================================
+
+    /**
+     * 
+     */
+    class ListenOnGpio : IDisposable
+    {
+
+        // -------------------------------------------------------------
+
+        #region vars
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        private ValueState currentValue;
+
+        /**
+         * 
+         */
+        private Thread thread;
+
+        /**
+         * 
+         */
+        private bool isRunning;
+
+        // -------------------------------------------------------------
+
+        #endregion vars
+
+        // -------------------------------------------------------------
+
+        #region events
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public event GPIO.ValueChangeFunktion ValueChanged;
+
+        // -------------------------------------------------------------
+
+        #endregion events
+
+        // -------------------------------------------------------------
+
+        #region get/set
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public GPIO ListenGpio
+        {
+            get;
+            private set;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public bool OnListen
+        {
+            get;
+            private set;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public ValueState CurrentValue
+        {
+            get
+            {
+                return this.currentValue;
+            }
+            set
+            {
+                if (this.currentValue == value) return;
+
+                if (this.ValueChanged != null) this.ValueChanged ( this.ListenGpio, this.currentValue, value );
+
+                this.currentValue = value;
+            }
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion get/set
+
+        // -------------------------------------------------------------
+
+        #region ctor
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public ListenOnGpio ( GPIO listenGpio )
+        {
+            this.currentValue = ValueState.UNKNOWN;
+
+            this.ListenGpio = listenGpio;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        ~ListenOnGpio (  )
+        {
+            this.Dispose (  );
+        }
+
+        // -------------------------------------------------------------
+
+        #endregion ctor
+
+        // -------------------------------------------------------------
+
+        #region methods
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public bool Start (  )
+        {
+            if ( this.OnListen ) return false;
+
+            this.OnListen = true;
+
+            this.currentValue = this.ListenGpio.Value ? ValueState.HIGH : ValueState.LOW;
+
+            this.thread = new Thread ( this.Listen );
+
+            this.thread.Start (  );
+
+            return true;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public void Listen (  )
+        {
+            this.isRunning = true;
+
+            while ( this.isRunning )
+            {
+                Thread.Sleep ( 1 );
+
+                this.CurrentValue = this.ListenGpio.Value ? ValueState.HIGH : ValueState.LOW;
+            }
+
+            this.OnListen = false;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public bool Stop (  )
+        {
+            this.isRunning = false;
+
+            while ( this.OnListen )
+            {
+
+            }
+
+            return true;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public void Dispose (  )
+        {
+            this.Stop (  );
         }
 
         // -------------------------------------------------------------
