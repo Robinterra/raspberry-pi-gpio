@@ -218,7 +218,7 @@ namespace RaspberryPi
         /**
          *
          */
-        public delegate bool ValueChangeFunktion(GPIO _currentGpio, ValueState _oldValue, ValueState _newValue);
+        public delegate bool ValueChangeFunktion ( GPIO _currentGpio, ValueState _oldValue, ValueState _newValue );
 
         // -------------------------------------------------------------
 
@@ -878,7 +878,9 @@ namespace RaspberryPi
             }
             catch { return ValueState.UNKNOWN; }
 
-            return value == "0" ? ValueState.LOW : ValueState.HIGH;
+            if (value.Length < 1) return ValueState.UNKNOWN;
+
+            return value[0] == '0' ? ValueState.LOW : ValueState.HIGH;
         }
 
         // -------------------------------------------------------------
