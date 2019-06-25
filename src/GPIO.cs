@@ -638,9 +638,11 @@ namespace RaspberryPi
 
             this.ListenOnGpios.Remove ( listenOnGpio );
 
-            if ( this.ListenOnGpios.Count == 0 ) this.StopListen (  );
+            bool isok = this.ListenOnGpios.Count == 0;
 
             this.listeVonListenOnGpiosIsUse = false;
+
+            if ( isok ) this.StopListen (  );
 
             return true;
         }
@@ -661,9 +663,11 @@ namespace RaspberryPi
 
             this.ListenOnGpios.Add ( listenOnGpio );
 
-            if ( this.ListenOnGpios.Count == 1 ) this.StartListen (  );
+            bool isok = this.ListenOnGpios.Count == 1;
 
             this.listeVonListenOnGpiosIsUse = false;
+
+            if ( isok ) this.StartListen (  );
 
             return true;
         }
@@ -1346,6 +1350,8 @@ namespace RaspberryPi
          */
         public void Dispose (  )
         {
+            GPIOController.Instance.RemoveListen ( this );
+
             foreach ( GPIO.ValueChangeFunktion valueChangedFunktion in this.ValueChangedDelegates )
             {
                 this.valueChanged -= valueChangedFunktion;
