@@ -282,16 +282,12 @@ namespace RaspberryPi
                 this.eventsAnzahl++;
 
                 this.ListenGpio.ValueChanged += value;
-
-                if ( this.eventsAnzahl == 1 ) this.StartListen (  );
             }
             remove
             {
                 this.eventsAnzahl--;
 
                 this.ListenGpio.ValueChanged -= value;
-
-                if ( this.eventsAnzahl == 0 ) this.StopListen (  );
             }
         }
 
@@ -376,6 +372,7 @@ namespace RaspberryPi
             this.ListenGpio.Dispose (  );
 
             this.listenGpio = null;
+
             this.pin = null;
 
         }
@@ -414,32 +411,6 @@ namespace RaspberryPi
             if ( !this.ListenGpio.OnListen ) this.ListenGpio.CurrentValue = _value;
 
             return this.pin.Write ( _value );
-        }
-
-        // -------------------------------------------------------------
-
-        /**
-         * Startet das Überwachen des Gpios
-         *
-         * @return (bool) true = alles ok; false = fehler
-         */
-        private bool StartListen (  )
-        {
-            if ( this.ListenGpio.OnListen ) return true;
-
-            return this.ListenGpio.Start (  );
-        }
-
-        // -------------------------------------------------------------
-
-        /**
-         * Beendet das Überwachen des Gpios
-         *
-         * @return (bool) true = alles ok; false = fehler
-         */
-        public bool StopListen (  )
-        {
-            return this.ListenGpio.Stop (  );
         }
 
         // -------------------------------------------------------------
@@ -513,6 +484,32 @@ namespace RaspberryPi
          */
         private List<GPIOPin> gpioPins;
 
+        /**
+         * 
+         */
+        private List<ListenOnGpio> listenOnGpios;
+
+        
+        /**
+         * Der Thread der für das Überwachen der Gpios zuständig ist
+         */
+        private Thread threadListenGpios;
+
+        /**
+         * gibt an ob das auslesen am laufen ist
+         */
+        private bool isRunning;
+
+        /**
+         * 
+         */
+        private bool listeVonListenOnGpiosIsUse;
+
+        /**
+         * 
+         */
+        private bool isDisposed;
+
         // -------------------------------------------------------------
 
         #endregion vars
@@ -520,6 +517,17 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         #region get/set
+
+        // -------------------------------------------------------------
+
+        /**
+         * Gibt an ob er bereits überwacht
+         */
+        public bool OnListen
+        {
+            get;
+            private set;
+        }
 
         // -------------------------------------------------------------
 
@@ -535,6 +543,23 @@ namespace RaspberryPi
                 this.gpioPins = new List<RaspberryPi.GPIOPin> (  );
 
                 return this.gpioPins;
+            }
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * 
+         */
+        public List<ListenOnGpio> ListenOnGpios
+        {
+            get
+            {
+                if ( this.listenOnGpios != null ) return this.listenOnGpios;
+
+                this.listenOnGpios = new List<ListenOnGpio> (  );
+
+                return this.listenOnGpios;
             }
         }
 
@@ -603,17 +628,139 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        public bool RemoveListen ( ListenOnGpio listenOnGpio )
+        {
+            if ( listenOnGpio == null ) return false;
+
+            if ( this.isDisposed ) return false;
+
+            while ( this.listeVonListenOnGpiosIsUse ) {  }
+
+            this.listeVonListenOnGpiosIsUse = true;
+
+            if ( !this.ListenOnGpios.Contains ( listenOnGpio ) ) return this.listeVonListenOnGpiosIsUse = false;
+
+            this.ListenOnGpios.Remove ( listenOnGpio );
+
+            if ( this.ListenOnGpios.Count == 1 ) this.StopListen (  );
+
+            this.listeVonListenOnGpiosIsUse = false;
+
+            return true;
+        }
+
+        // -------------------------------------------------------------
+
+        public bool AddListen ( ListenOnGpio listenOnGpio )
+        {
+            if ( listenOnGpio == null ) return false;
+
+            if ( this.isDisposed ) return false;
+
+            while ( this.listeVonListenOnGpiosIsUse ) {  }
+
+            this.listeVonListenOnGpiosIsUse = true;
+
+            if ( this.ListenOnGpios.Contains ( listenOnGpio ) ) return this.listeVonListenOnGpiosIsUse = false;
+
+            this.ListenOnGpios.Add ( listenOnGpio );
+
+            if ( this.ListenOnGpios.Count == 1 ) this.StartListen (  );
+
+            this.listeVonListenOnGpiosIsUse = false;
+
+            return true;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Startet das überwachen des Gpio
+         */
+        public bool StartListen (  )
+        {
+            if ( this.OnListen ) return false;
+
+            this.OnListen = true;
+
+            this.threadListenGpios = new Thread ( this.Listen );
+
+            this.threadListenGpios.Start (  );
+
+            return true;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Diese übernimmt das überwachen des Gpio
+         */
+        private void Listen (  )
+        {
+            this.isRunning = true;
+
+            while ( this.isRunning )
+            {
+                Thread.Sleep ( 1 );
+
+                while ( this.listeVonListenOnGpiosIsUse ) {  }
+
+                this.listeVonListenOnGpiosIsUse = true;
+
+                foreach ( ListenOnGpio listenGpio in this.ListenOnGpios )
+                {
+                    listenGpio.Listen (  );
+                }
+
+                this.listeVonListenOnGpiosIsUse = false;
+            }
+
+            this.OnListen = false;
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Beendet das Überwachen des Gpio
+         */
+        public bool StopListen (  )
+        {
+            this.isRunning = false;
+
+            while ( this.OnListen )
+            {
+
+            }
+
+            return true;
+        }
+
+        // -------------------------------------------------------------
+
         /**
          * * Gibt alle Pins wieder frei
          */
         public void Dispose (  )
         {
+            this.isDisposed = true;
+
             foreach ( GPIOPin pin in this.GPIOPins )
             {
                 if ( pin == null ) continue;
 
                 pin.Dispose (  );
             }
+
+            this.StopListen (  );
+
+            foreach ( ListenOnGpio listenGpio in this.ListenOnGpios )
+            {
+                listenGpio.Dispose (  );
+            }
+
+            this.ListenOnGpios.Clear (  );
+
+            this.listenOnGpios = null;
 
             this.GPIOPins.Clear (  );
 
@@ -1041,14 +1188,9 @@ namespace RaspberryPi
         private ValueState currentValue;
 
         /**
-         * Der Thread der für das auslesen zuständig ist
+         *
          */
-        private Thread thread;
-
-        /**
-         * gibt an ob das auslesen am laufen ist
-         */
-        private bool isRunning;
+        private List<GPIO.ValueChangeFunktion> valueChangedDelegates;
 
         // -------------------------------------------------------------
 
@@ -1075,6 +1217,20 @@ namespace RaspberryPi
 
         // -------------------------------------------------------------
 
+        private List<GPIO.ValueChangeFunktion> ValueChangedDelegates
+        {
+            get
+            {
+                if ( this.valueChangedDelegates != null ) return this.valueChangedDelegates;
+
+                this.valueChangedDelegates = new List<GPIO.ValueChangeFunktion> (  );
+
+                return this.valueChangedDelegates;
+            }
+        }
+
+        // -------------------------------------------------------------
+
         /**
          * Der Event wird ausgeführt wenn die Value sich ändert
          */
@@ -1083,10 +1239,12 @@ namespace RaspberryPi
             add
             {
                 this.valueChanged += value;
+                this.ValueChangedDelegates.Add ( value );
             }
             remove
             {
                 this.valueChanged -= value;
+                this.valueChangedDelegates.Remove ( value );
             }
         }
 
@@ -1127,7 +1285,7 @@ namespace RaspberryPi
             {
                 if (this.currentValue == value) return;
 
-                if (this.ValueChanged != null) this.ValueChanged ( this.ListenGpio, this.currentValue, value );
+                if (this.valueChanged != null) this.valueChanged ( this.ListenGpio, this.currentValue, value );
 
                 this.currentValue = value;
             }
@@ -1150,9 +1308,13 @@ namespace RaspberryPi
          */
         public ListenOnGpio ( GPIO listenGpio )
         {
-            this.currentValue = ValueState.UNKNOWN;
+            //this.currentValue = ValueState.UNKNOWN;
 
             this.ListenGpio = listenGpio;
+
+            this.currentValue = this.ListenGpio.Value ? ValueState.HIGH : ValueState.LOW;
+
+            GPIOController.Instance.AddListen ( this );
         }
 
         // -------------------------------------------------------------
@@ -1176,57 +1338,11 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * Startet das überwachen des Gpio
-         */
-        public bool Start (  )
-        {
-            if ( this.OnListen ) return false;
-
-            this.OnListen = true;
-
-            this.currentValue = this.ListenGpio.Value ? ValueState.HIGH : ValueState.LOW;
-
-            this.thread = new Thread ( this.Listen );
-
-            this.thread.Start (  );
-
-            return true;
-        }
-
-        // -------------------------------------------------------------
-
-        /**
          * Diese übernimmt das überwachen des Gpio
          */
-        private void Listen (  )
+        public void Listen (  )
         {
-            this.isRunning = true;
-
-            while ( this.isRunning )
-            {
-                Thread.Sleep ( 1 );
-
-                this.CurrentValue = this.ListenGpio.Value ? ValueState.HIGH : ValueState.LOW;
-            }
-
-            this.OnListen = false;
-        }
-
-        // -------------------------------------------------------------
-
-        /**
-         * Beendet das Überwachen des Gpio
-         */
-        public bool Stop (  )
-        {
-            this.isRunning = false;
-
-            while ( this.OnListen )
-            {
-
-            }
-
-            return true;
+            this.CurrentValue = this.ListenGpio.Value ? ValueState.HIGH : ValueState.LOW;
         }
 
         // -------------------------------------------------------------
@@ -1236,7 +1352,18 @@ namespace RaspberryPi
          */
         public void Dispose (  )
         {
-            this.Stop (  );
+            foreach ( GPIO.ValueChangeFunktion valueChangedFunktion in this.ValueChangedDelegates )
+            {
+                this.valueChanged -= valueChangedFunktion;
+            }
+
+            this.ValueChangedDelegates.Clear (  );
+
+            this.valueChangedDelegates = null;
+
+            this.ListenGpio = null;
+
+            GPIOController.Instance.RemoveListen ( this );
         }
 
         // -------------------------------------------------------------
