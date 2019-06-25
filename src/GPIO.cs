@@ -390,8 +390,6 @@ namespace RaspberryPi
 
             ValueState valueState = this.pin.Read (  );
 
-            if ( !this.ListenGpio.OnListen ) this.ListenGpio.CurrentValue = valueState;
-
             return valueState;
         }
 
@@ -407,8 +405,6 @@ namespace RaspberryPi
         protected bool Write ( ValueState _value )
         {
             if ( this.pin == null ) return false;
-
-            if ( !this.ListenGpio.OnListen ) this.ListenGpio.CurrentValue = _value;
 
             return this.pin.Write ( _value );
         }
@@ -642,7 +638,7 @@ namespace RaspberryPi
 
             this.ListenOnGpios.Remove ( listenOnGpio );
 
-            if ( this.ListenOnGpios.Count == 1 ) this.StopListen (  );
+            if ( this.ListenOnGpios.Count == 0 ) this.StopListen (  );
 
             this.listeVonListenOnGpiosIsUse = false;
 
@@ -1192,6 +1188,11 @@ namespace RaspberryPi
          */
         private List<GPIO.ValueChangeFunktion> valueChangedDelegates;
 
+        /**
+         * Die Anzahl der hinzugefügten events
+         */
+        private int eventsAnzahl = 0;
+
         // -------------------------------------------------------------
 
         #endregion vars
@@ -1238,13 +1239,19 @@ namespace RaspberryPi
         {
             add
             {
+                this.eventsAnzahl++;
+
                 this.valueChanged += value;
                 this.ValueChangedDelegates.Add ( value );
+
+                if ( this.eventsAnzahl == 1 ) GPIOController.Instance.AddListen ( this );
             }
             remove
             {
                 this.valueChanged -= value;
-                this.valueChangedDelegates.Remove ( value );
+                this.ValueChangedDelegates.Remove ( value );
+
+                if ( this.eventsAnzahl == 0 ) GPIOController.Instance.RemoveListen ( this );
             }
         }
 
@@ -1254,17 +1261,6 @@ namespace RaspberryPi
          * Der Gpio welcher überwacht wird
          */
         public GPIO ListenGpio
-        {
-            get;
-            private set;
-        }
-
-        // -------------------------------------------------------------
-
-        /**
-         * Gibt an ob er bereits überwacht
-         */
-        public bool OnListen
         {
             get;
             private set;
@@ -1313,8 +1309,6 @@ namespace RaspberryPi
             this.ListenGpio = listenGpio;
 
             this.currentValue = this.ListenGpio.Value ? ValueState.HIGH : ValueState.LOW;
-
-            GPIOController.Instance.AddListen ( this );
         }
 
         // -------------------------------------------------------------
@@ -1362,8 +1356,6 @@ namespace RaspberryPi
             this.valueChangedDelegates = null;
 
             this.ListenGpio = null;
-
-            GPIOController.Instance.RemoveListen ( this );
         }
 
         // -------------------------------------------------------------
