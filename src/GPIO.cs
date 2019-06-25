@@ -201,7 +201,12 @@ namespace RaspberryPi
         private GPIOPin pin;
 
         /**
-         * 
+         * Die Anzahl der hinzugefügten events
+         */
+        private int eventsAnzahl = 0;
+
+        /**
+         * Die Listen Klasse, welche den Gpio überwacht um so den event auszulösen
          */
         private ListenOnGpio listenGpio;
 
@@ -216,7 +221,13 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
+         * Die Delagete Funktion für das Event
          *
+         * @param[in] Der Gpio in dem sich die Value geändert hat.
+         * @param[in] Die alte Value des Gpio
+         * @param[in] Die neue Value des Gpio
+         *
+         * @return (bool) Akutell nicht in Verwendung
          */
         public delegate bool ValueChangeFunktion ( GPIO _currentGpio, ValueState _oldValue, ValueState _newValue );
 
@@ -231,7 +242,7 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Die Listen Klasse, welche den Gpio überwacht um so den event auszulösen
          */
         private ListenOnGpio ListenGpio
         {
@@ -261,17 +272,26 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Dieser Event wird ausgelöst wenn sich die Value ändert.
+         * Startet auch einen Listener der den GPIO überwacht ob sich der Wert geändert hat.
          */
         public event ValueChangeFunktion ValueChanged
         {
             add
             {
-                this.listenGpio.ValueChanged += value;
+                this.eventsAnzahl++;
+
+                this.ListenGpio.ValueChanged += value;
+
+                if ( this.eventsAnzahl == 1 ) this.StartListen (  );
             }
             remove
             {
-                this.listenGpio.ValueChanged -= value;
+                this.eventsAnzahl--;
+
+                this.ListenGpio.ValueChanged -= value;
+
+                if ( this.eventsAnzahl == 0 ) this.StopListen (  );
             }
         }
 
@@ -291,7 +311,9 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Die Value des Gpio.
+         *
+         * @return (bool) true = ValueState.HIGH; false = ValueState.LOW || ValueState.UNKNOWN
          */
         public bool Value
         {
@@ -397,9 +419,11 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Startet das Überwachen des Gpios
+         *
+         * @return (bool) true = alles ok; false = fehler
          */
-        public bool StartListen (  )
+        private bool StartListen (  )
         {
             if ( this.ListenGpio.OnListen ) return true;
 
@@ -409,7 +433,9 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Beendet das Überwachen des Gpios
+         *
+         * @return (bool) true = alles ok; false = fehler
          */
         public bool StopListen (  )
         {
@@ -995,10 +1021,13 @@ namespace RaspberryPi
     // =================================================================
 
     /**
-     * 
+     * Die Überwachung eines Gpio
      */
     class ListenOnGpio : IDisposable
     {
+        #if (LOGLEVEL_DEBUG)
+            public const string KLASSE = "ListenOnGpio";
+        #endif
 
         // -------------------------------------------------------------
 
@@ -1007,17 +1036,17 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Die zuletzt erfasste Value
          */
         private ValueState currentValue;
 
         /**
-         * 
+         * Der Thread der für das auslesen zuständig ist
          */
         private Thread thread;
 
         /**
-         * 
+         * gibt an ob das auslesen am laufen ist
          */
         private bool isRunning;
 
@@ -1032,9 +1061,9 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Der Event wird ausgeführt wenn die Value sich ändert
          */
-        public event GPIO.ValueChangeFunktion ValueChanged;
+        private event GPIO.ValueChangeFunktion valueChanged;
 
         // -------------------------------------------------------------
 
@@ -1047,7 +1076,24 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Der Event wird ausgeführt wenn die Value sich ändert
+         */
+        public event GPIO.ValueChangeFunktion ValueChanged
+        {
+            add
+            {
+                this.valueChanged += value;
+            }
+            remove
+            {
+                this.valueChanged -= value;
+            }
+        }
+
+        // -------------------------------------------------------------
+
+        /**
+         * Der Gpio welcher überwacht wird
          */
         public GPIO ListenGpio
         {
@@ -1058,7 +1104,7 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Gibt an ob er bereits überwacht
          */
         public bool OnListen
         {
@@ -1069,7 +1115,7 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Die zuletzt erfasste Value
          */
         public ValueState CurrentValue
         {
@@ -1098,7 +1144,9 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Konstruktor dieser Klasse
+         *
+         * @param[in] listenGpio (GPIO) Der zu überwachende Gpio
          */
         public ListenOnGpio ( GPIO listenGpio )
         {
@@ -1110,7 +1158,7 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Der dekonstruktor dieser Klasse
          */
         ~ListenOnGpio (  )
         {
@@ -1128,7 +1176,7 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Startet das überwachen des Gpio
          */
         public bool Start (  )
         {
@@ -1148,9 +1196,9 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Diese übernimmt das überwachen des Gpio
          */
-        public void Listen (  )
+        private void Listen (  )
         {
             this.isRunning = true;
 
@@ -1167,7 +1215,7 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Beendet das Überwachen des Gpio
          */
         public bool Stop (  )
         {
@@ -1184,7 +1232,7 @@ namespace RaspberryPi
         // -------------------------------------------------------------
 
         /**
-         * 
+         * Disposed dieses Objekt
          */
         public void Dispose (  )
         {
